@@ -296,7 +296,7 @@ def process_yoto_original_urls(urls):
         announce_message(f"Finished procesing {index + 1} of {total_urls}", MESSAGE_TYPES['info'])
 
     #after processing, return the UI to normal state
-    download_originals_button.configure(state=tk.NORMAL, text="Extract files")
+    download_originals_button.configure(state=tk.NORMAL, text="Extract Yoto Original files")
     progress_bar.pack_forget()
     announce_message(f"All downloads and processing completed successfully.", MESSAGE_TYPES['info'])
     save_logs()
