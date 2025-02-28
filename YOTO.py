@@ -864,6 +864,7 @@ def json_status_callback(value):
     announce_message(f"'Keep JSON' button set to {value}, {keep_json}", MESSAGE_TYPES['info'])
 json_segbutton_var = ctk.StringVar(value="Clean")
 json_segbutton = ctk.CTkSegmentedButton(root, values=["Clean", "Keep", "Only"], command=json_status_callback, variable=json_segbutton_var)
+json_segbutton.set("Clean")
 json_segbutton.pack()
 
 save_log_button = ctk.CTkButton(root, text="Dump Log to File", command=save_logs)
