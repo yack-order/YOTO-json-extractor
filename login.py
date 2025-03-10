@@ -12,7 +12,7 @@ LOGIN_HTML = """
 <script src="https://cdn.auth0.com/js/auth0/9.18/auth0.min.js"></script>
 <script type="text/javascript">
 	var webAuth = new auth0.WebAuth({
-		clientID: 'cIQ241O2gouOOAwFFvxuGVkHGT3LL6rn',
+		clientID: '90v6OFRB0bKTtpSCqT7edO7rlu9je8nb',
 		domain: 'login.yotoplay.com'
 	});
 	webAuth.authorize({

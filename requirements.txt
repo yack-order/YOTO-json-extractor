@@ -1,0 +1,9 @@
+beautifulsoup4
+CTkMessagebox
+CTkMessagebox
+customtkinter
+mutagen
+Pillow
+py7zr
+Requests
+selenium
