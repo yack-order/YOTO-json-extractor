@@ -146,10 +146,32 @@ def download_and_process_yoto_originals():
     thread.start()
 
 def ensure_https(url):
-    if not url.startswith("http://") and not url.startswith("https://"):
-        url = "https://" + url
-        announce_message(f"Ensure_https: URL was not formatted as expected.", MESSAGE_TYPES['warning'])
-    return url
+    try:
+        if not url:
+            return url
+        # trim whitespace
+        url = url.strip()
+
+        # handle protocol-relative URLs like //example.com
+        if url.startswith("//"):
+            url = "https:" + url
+            announce_message(f"Ensure_https: Protocol-relative URL normalized to https.", MESSAGE_TYPES['warning'])
+            return url
+
+        # case-insensitive match for http:// or https:// and force protocol to lowercase
+        m = re.match(r'^(https?://)', url, re.IGNORECASE)
+        if m:
+            protocol = m.group(1).lower()
+            rest = url[m.end():]
+            url = protocol + rest
+        else:
+            url = "https://" + url
+            announce_message(f"Ensure_https: URL was not formatted as expected.", MESSAGE_TYPES['warning'])
+
+        return url
+    except Exception as ex:
+        announce_message(f"Ensure_https failed.", MESSAGE_TYPES['error'], ex)
+        return url
 
 def remove_string(textbox, text):
     start_index = textbox.search(text, "1.0", stopindex="end")
@@ -197,6 +219,8 @@ def getExtensionFromContentType(contentType=None):
             return "flac"
         case "audio/x-m4a":
             return "m4a"
+        case "audio/opus":
+            return "opus"
         case "binary/octet-stream":
             return "unknown" # need to check the filename to know what filetype
 
