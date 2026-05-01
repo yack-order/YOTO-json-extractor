@@ -492,12 +492,14 @@ def process_json(data, title, url):
     except KeyError as ex:
         announce_message(f"\t\t\tMetadata parse error: object not found: props/pageProps/card/metadata/author", MESSAGE_TYPES['error'], e=ex)
 
-    try:
-        description = data['props']['pageProps']['card']['metadata'].get('description', metaundef)
-        announce_message(f"\t\t\tDescription: {description}", MESSAGE_TYPES['info'])
-        if description is not metaundef: meta_card_file.write('Description:: ' + description + '\n')
-    except KeyError as ex:
-        announce_message(f"\t\t\tMetadata parse error: object not found: props/pageProps/card/metadata/description", MESSAGE_TYPES['error'], e=ex)
+        try:
+            description = data['props']['pageProps']['card']['metadata'].get('description', metaundef)
+            if description is None:
+                description = metaundef  # treat explicit null same as missing
+            announce_message(f"\t\t\tDescription: {description}", MESSAGE_TYPES['info'])
+            if description is not metaundef: meta_card_file.write('Description:: ' + description + '\n')
+        except KeyError as ex:
+            announce_message(f"\t\t\tMetadata parse error: object not found: props/pageProps/card/metadata/description", MESSAGE_TYPES['error'], e=ex)
     meta_card_file.write('\n')
     announce_message(f"\t\t'Basic' metadata complete.", MESSAGE_TYPES['info'])
 
