@@ -1,0 +1,6 @@
+# Direct runtime dependencies; install the hashed requirements.txt lock.
+beautifulsoup4
+customtkinter
+Pillow
+py7zr
+requests

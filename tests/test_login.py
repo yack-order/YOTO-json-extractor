@@ -2,6 +2,7 @@ import base64
 import hashlib
 import io
 import json
+import socket
 import types
 import unittest
 from unittest.mock import MagicMock, patch
@@ -65,6 +66,30 @@ class LoginTests(unittest.TestCase):
             self.assertIsNone(login.get_access_token())
             self.assertNotIn('SYNTHETIC', output.getvalue())
         self.assertTrue(server.__exit__.called)
+
+    def test_real_callback_handler_accepts_only_exact_host_without_access_logging(self):
+        for host, expected_status in [('127.0.0.1:3000', b'200 OK'), ('evil.invalid', b'400 Bad Request')]:
+            with self.subTest(host=host), patch('login.CallbackServer') as factory:
+                login.callback_server('expected')
+                handler = factory.call_args.args[1]
+                server = types.SimpleNamespace(code=None)
+                client, listener = socket.socketpair()
+                try:
+                    client.settimeout(1)
+                    listener.settimeout(1)
+                    client.sendall(('GET /callback?code=SYNTHETIC_CODE&state=expected HTTP/1.1\r\n'
+                                    f'Host: {host}\r\nConnection: close\r\n\r\n').encode())
+                    with patch('sys.stderr', new_callable=io.StringIO) as stderr:
+                        handler(listener, ('127.0.0.1', 1234), server)
+                        self.assertEqual(stderr.getvalue(), '')
+                    listener.close()
+                    response = client.recv(4096)
+                    self.assertIn(expected_status, response)
+                    self.assertNotIn(b'SYNTHETIC_CODE', response)
+                    self.assertEqual(server.code, 'SYNTHETIC_CODE' if expected_status == b'200 OK' else None)
+                finally:
+                    client.close()
+                    listener.close()
 
     def test_occupied_callback_port_fails_before_opening_browser(self):
         with patch.dict('os.environ', {'YOTO_CLIENT_ID': 'syntheticclient'}), \

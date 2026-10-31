@@ -1,0 +1,4 @@
+# Keep shared dependencies aligned with the runtime lock.
+-c requirements.txt
+pip-audit
+pip-tools
