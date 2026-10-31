@@ -17,6 +17,13 @@ try:
         app = runpy.run_path(str(Path(__file__).resolve().parents[1] / 'YOTO.py'))
     root.update_idletasks()
     assert app['download_button'].cget('text') == 'Extract (non Yoto Original) files'
+    with patch.object(app['messagebox'], 'showinfo') as popup:
+        app['silent_mode_toggle'].set('off')
+        app['toggle_silent_mode']()
+        assert popup.call_count == 1
+        app['silent_mode_toggle'].set('on')
+        app['toggle_silent_mode']()
+        assert popup.call_count == 1
     app['json_status_callback']('Only')
     with tempfile.TemporaryDirectory() as output:
         app['handle_json_data'].__globals__['save_directory'] = output
@@ -35,6 +42,6 @@ try:
     with patch.dict(os.environ, {'YOTO_CLIENT_ID': ''}):
         app['authenticate']()  # fail closed without starting a browser or listener
     root.update_idletasks()
-    print('GUI construction, mode callback, redacted JSON export and missing-client login checks passed.')
+    print('GUI construction, silent-mode toggle, mode callback, redacted JSON export and missing-client login checks passed.')
 finally:
     root.destroy()

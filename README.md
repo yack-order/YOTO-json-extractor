@@ -1,18 +1,20 @@
-# Yoto JSON Extractor v2
+# Yoto JSON Extractor — hardened fork
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/F1F315ODO5)
 
 A Python desktop tool for reading Yoto playlist metadata and downloading available audio and artwork into a local 7z archive. This is a fork of [Alberto Fernández's YOTO-json-extractor](https://github.com/afsenovilla/YOTO-json-extractor), with subsequent contributions and safety fixes.
 
-This repository distributes source code. There are currently no executable releases from this repository. The owner is keeping it private while deciding whether to publish it.
+This public repository is a true fork of upstream and includes the complete Git history from [YOTO-json-extractor-v2](https://github.com/yack-order/YOTO-json-extractor-v2). Its original issues and PRs remain there, with a linked [metadata archive](history/README.md) here. See [UPSTREAM_SYNC.md](UPSTREAM_SYNC.md) for the audited integration and differences from upstream.
+
+This repository distributes source code. There are currently no executable releases from this repository.
 
 ## Install
 
 Use **Python 3.12 with Tk support**. The automated GUI smoke test runs on Linux under Xvfb; headless regression tests also run locally on macOS. Windows and a full macOS GUI session have not been verified.
 
 ```sh
-git clone https://github.com/yack-order/YOTO-json-extractor-v2.git
-cd YOTO-json-extractor-v2
+git clone https://github.com/yack-order/YOTO-json-extractor.git
+cd YOTO-json-extractor
 python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install --require-hashes -r requirements.txt

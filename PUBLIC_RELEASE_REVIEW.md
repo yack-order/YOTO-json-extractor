@@ -34,4 +34,4 @@ Old local logs, raw JSON, archives and CSVs are untouched and may still contain 
 
 Networking has explicit byte/socket limits and elapsed checks between reads; it is not a hard wall-clock guarantee covering DNS or initial response headers. The desktop client is not a public fetch service and its DNS checks are not a complete DNS-rebinding defense. Servers requiring HTTP, compressed responses, proxies, infinite streams, oversized files or unsupported filesystem publication semantics can fail safely.
 
-These findings have concrete fixes and recorded verification. This report is not a claim of a formal security audit or a guarantee against future vulnerabilities. Repository visibility remains private until the owner explicitly decides otherwise.
+These findings have concrete fixes and recorded verification. This report is not a claim of a formal security audit or a guarantee against future vulnerabilities. The owner subsequently made the original repository public and authorized a new true fork. The original review record remains linked above; the [upstream sync record](UPSTREAM_SYNC.md) and [metadata archive](history/README.md) document the later migration.

@@ -36,3 +36,6 @@ build/
 dist/
 *.spec
 .DS_Store
+
+# Deliberately reviewed public issue/PR provenance snapshot only
+!history/legacy-github-metadata.json

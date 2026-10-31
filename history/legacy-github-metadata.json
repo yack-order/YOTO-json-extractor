@@ -1,0 +1,691 @@
+{
+  "schema_version": 1,
+  "snapshot_date": "2026-10-31",
+  "source_repository": "yack-order/YOTO-json-extractor-v2",
+  "source_commit": "2dac6bd3a63b103e8c6e3fe130cc0e09e51ed131",
+  "common_ancestor": "ceb7ce3e855198c9cc1c35a457360641df6aca05",
+  "note": "Read-only public metadata snapshot. Original linked GitHub records retain authoritative authorship, timestamps, reviews and merge status. No native records were recreated or moved.",
+  "repository": {
+    "id": "R_kgDOM7pTkw",
+    "nameWithOwner": "yack-order/YOTO-json-extractor-v2",
+    "url": "https://github.com/yack-order/YOTO-json-extractor-v2",
+    "isFork": false,
+    "isPrivate": false,
+    "defaultBranchRef": {
+      "name": "main",
+      "target": {
+        "oid": "2dac6bd3a63b103e8c6e3fe130cc0e09e51ed131"
+      }
+    },
+    "issues": {
+      "totalCount": 7,
+      "pageInfo": {
+        "hasNextPage": false,
+        "endCursor": "Y3Vyc29yOnYyOpK0MjAyNi0xMC0zMVQxODozMjoyNVrPAAAAAW3f6M8="
+      },
+      "nodes": [
+        {
+          "number": 2,
+          "title": "Prevent playlist metadata from escaping output paths or deleting existing folders",
+          "body": "Severity: High\n\n## Problem\n\nRemote playlist titles such as `..` survive filename cleaning and select the parent directory as the workspace. Category and card ID are interpolated into archive paths without sanitization. Existing title-named directories are reused and later recursively deleted.\n\n## Acceptance criteria\n\nCreate a unique application-owned workspace per playlist; sanitize every filename component; anchor all outputs to the selected directory; reject traversal and symlink destinations; delete only that owned workspace. Verify malicious titles, category/card IDs, existing directories, and symlinks using synthetic fixtures.\n\n## Review scope\n\nFound during the pre-publication review of main at `6dcf988`. Reproductions use synthetic values; no real tokens, protected playlist URLs, or personal data are included. Keep the repository private during remediation. Implement and verify this issue in its own independently reversible PR.\n",
+          "url": "https://github.com/yack-order/YOTO-json-extractor-v2/issues/2",
+          "state": "CLOSED",
+          "createdAt": "2026-10-31T18:32:17Z",
+          "updatedAt": "2026-10-31T18:34:11Z",
+          "closedAt": "2026-10-31T18:34:11Z",
+          "author": {
+            "login": "humor4fun"
+          },
+          "labels": {
+            "nodes": [],
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            }
+          },
+          "comments": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          }
+        },
+        {
+          "number": 3,
+          "title": "Retain downloads when archive creation or integrity verification fails",
+          "body": "Severity: High\n\n## Problem\n\nCompression exceptions are caught and processing continues into recursive deletion. Archives are opened in write mode, potentially overwriting an existing same-name archive, and are never verified before source cleanup.\n\n## Acceptance criteria\n\nPublish a new archive without overwriting existing files; verify its contents/integrity before cleanup; retain downloads on every creation or verification failure; report failure rather than success. Exercise write failures, damaged archives, collisions, and successful round trips.\n\n## Review scope\n\nFound during the pre-publication review of main at `6dcf988`. Reproductions use synthetic values; no real tokens, protected playlist URLs, or personal data are included. Keep the repository private during remediation. Implement and verify this issue in its own independently reversible PR.\n",
+          "url": "https://github.com/yack-order/YOTO-json-extractor-v2/issues/3",
+          "state": "CLOSED",
+          "createdAt": "2026-10-31T18:32:19Z",
+          "updatedAt": "2026-10-31T18:35:35Z",
+          "closedAt": "2026-10-31T18:35:35Z",
+          "author": {
+            "login": "humor4fun"
+          },
+          "labels": {
+            "nodes": [],
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            }
+          },
+          "comments": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          }
+        },
+        {
+          "number": 4,
+          "title": "Redact protected URLs and credentials from logs, exports, and diagnostic JSON",
+          "body": "Severity: Medium\n\n## Problem\n\nFull input and media URLs are logged. Completed/failed queues are persisted automatically, library CSV contains raw source URLs, and exceptions can dump complete JSON even in Clean mode. Generated sensitive artifacts are incompletely ignored by Git.\n\n## Acceptance criteria\n\nApply one privacy boundary to logs, errors, CSV and optional JSON exports; remove credential/contact fields and redact protected URLs; preserve explicitly classified public MYO/Yoto Space share links; stop unsolicited raw JSON error dumps; ignore all generated data and credentials. Validate with synthetic secrets and public share fixtures.\n\n## Review scope\n\nFound during the pre-publication review of main at `6dcf988`. Reproductions use synthetic values; no real tokens, protected playlist URLs, or personal data are included. Keep the repository private during remediation. Implement and verify this issue in its own independently reversible PR.\n",
+          "url": "https://github.com/yack-order/YOTO-json-extractor-v2/issues/4",
+          "state": "CLOSED",
+          "createdAt": "2026-10-31T18:32:20Z",
+          "updatedAt": "2026-10-31T18:39:12Z",
+          "closedAt": "2026-10-31T18:39:12Z",
+          "author": {
+            "login": "humor4fun"
+          },
+          "labels": {
+            "nodes": [],
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            }
+          },
+          "comments": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          }
+        },
+        {
+          "number": 5,
+          "title": "Validate OAuth callbacks and remove authentication material from failure output",
+          "body": "Severity: Medium\n\n## Problem\n\nLogin accepts any browser URL containing the callback substring and prints the complete URL on parsing failure. Returned fragments are not correlated with a fresh local state value.\n\n## Acceptance criteria\n\nValidate the exact callback scheme/host/port/path, validate a fresh unpredictable state, reject duplicate/error/empty token responses, keep failures URL-free, and quit the browser on all exit paths. Verify spoofed URLs, state mismatches, malformed callbacks and browser cleanup with mocks.\n\n## Review scope\n\nFound during the pre-publication review of main at `6dcf988`. Reproductions use synthetic values; no real tokens, protected playlist URLs, or personal data are included. Keep the repository private during remediation. Implement and verify this issue in its own independently reversible PR.\n",
+          "url": "https://github.com/yack-order/YOTO-json-extractor-v2/issues/5",
+          "state": "CLOSED",
+          "createdAt": "2026-10-31T18:32:21Z",
+          "updatedAt": "2026-10-31T18:41:42Z",
+          "closedAt": "2026-10-31T18:41:42Z",
+          "author": {
+            "login": "humor4fun"
+          },
+          "labels": {
+            "nodes": [],
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            }
+          },
+          "comments": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          }
+        },
+        {
+          "number": 6,
+          "title": "Bound HTTP requests and stop timed-out worker downloads",
+          "body": "Severity: Medium\n\n## Problem\n\nHTTP requests have no socket timeouts or response size limits. A thread join timeout leaves the underlying download running and can accumulate live workers; responses are buffered without size bounds. The URL normalizer also permits HTTP.\n\n## Acceptance criteria\n\nUse bounded streaming requests with explicit connection/read timeouts and elapsed-time/size limits; close responses; propagate sanitized failures; enforce HTTPS and safe authenticated destinations. Validate stalled/oversized responses, redirects, exceptions and bearer-token handling without live account data.\n\n## Review scope\n\nFound during the pre-publication review of main at `6dcf988`. Reproductions use synthetic values; no real tokens, protected playlist URLs, or personal data are included. Keep the repository private during remediation. Implement and verify this issue in its own independently reversible PR.\n",
+          "url": "https://github.com/yack-order/YOTO-json-extractor-v2/issues/6",
+          "state": "CLOSED",
+          "createdAt": "2026-10-31T18:32:22Z",
+          "updatedAt": "2026-10-31T18:45:09Z",
+          "closedAt": "2026-10-31T18:45:09Z",
+          "author": {
+            "login": "humor4fun"
+          },
+          "labels": {
+            "nodes": [],
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            }
+          },
+          "comments": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          }
+        },
+        {
+          "number": 7,
+          "title": "Pin and audit application dependencies before public release",
+          "body": "Severity: Medium\n\n## Problem\n\nrequirements.txt contains only unpinned package names and a duplicate CTkMessagebox entry. Installations are not reproducible and no dependency vulnerability check is recorded.\n\n## Acceptance criteria\n\nResolve and pin direct/transitive dependencies for a documented Python version, remove duplicate entries, add automated tests and dependency auditing, and record actual audit results. Do not claim other operating systems or live authentication were tested.\n\n## Review scope\n\nFound during the pre-publication review of main at `6dcf988`. Reproductions use synthetic values; no real tokens, protected playlist URLs, or personal data are included. Keep the repository private during remediation. Implement and verify this issue in its own independently reversible PR.\n",
+          "url": "https://github.com/yack-order/YOTO-json-extractor-v2/issues/7",
+          "state": "CLOSED",
+          "createdAt": "2026-10-31T18:32:23Z",
+          "updatedAt": "2026-10-31T18:53:11Z",
+          "closedAt": "2026-10-31T18:53:11Z",
+          "author": {
+            "login": "humor4fun"
+          },
+          "labels": {
+            "nodes": [],
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            }
+          },
+          "comments": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          }
+        },
+        {
+          "number": 8,
+          "title": "Correct installation, privacy, recovery, and release documentation",
+          "body": "Severity: Low\n\n## Problem\n\nREADME clones the upstream repository, advertises executable releases absent from this repository, and lacks accurate authentication prerequisites, supported Python version, privacy behavior and recovery instructions.\n\n## Acceptance criteria\n\nDocument this repository and upstream MIT attribution, source-only setup and actual dependencies, output/cleanup behavior, private data handling, security reporting, test/audit commands and limitations. Keep repository visibility private until the owner explicitly decides otherwise.\n\n## Review scope\n\nFound during the pre-publication review of main at `6dcf988`. Reproductions use synthetic values; no real tokens, protected playlist URLs, or personal data are included. Keep the repository private during remediation. Implement and verify this issue in its own independently reversible PR.\n",
+          "url": "https://github.com/yack-order/YOTO-json-extractor-v2/issues/8",
+          "state": "CLOSED",
+          "createdAt": "2026-10-31T18:32:25Z",
+          "updatedAt": "2026-10-31T18:56:58Z",
+          "closedAt": "2026-10-31T18:56:58Z",
+          "author": {
+            "login": "humor4fun"
+          },
+          "labels": {
+            "nodes": [],
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            }
+          },
+          "comments": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          }
+        }
+      ]
+    },
+    "pullRequests": {
+      "totalCount": 8,
+      "pageInfo": {
+        "hasNextPage": false,
+        "endCursor": "Y3Vyc29yOnYyOpK0MjAyNi0xMC0zMVQxODo1NToyM1rPAAAAATAEdAk="
+      },
+      "nodes": [
+        {
+          "number": 1,
+          "title": "Adding authentication login flow, and authenticated API call to pull …",
+          "body": "…content",
+          "url": "https://github.com/yack-order/YOTO-json-extractor-v2/pull/1",
+          "state": "MERGED",
+          "createdAt": "2025-02-08T02:39:45Z",
+          "updatedAt": "2025-02-08T04:09:30Z",
+          "closedAt": "2025-02-08T04:09:30Z",
+          "mergedAt": "2025-02-08T04:09:30Z",
+          "author": {
+            "login": "Mark-Sims"
+          },
+          "baseRefName": "main",
+          "headRefName": "auth-flow",
+          "baseRefOid": "04ed33caf77b08e6f3e65c57542cb4edc30b5a3e",
+          "headRefOid": "378677e716dd245510cc7450d0f4ddf3154effc4",
+          "mergeCommit": {
+            "oid": "cca92bd4124d25aeacb24cdb2f1e4bec56f21b99"
+          },
+          "mergedBy": {
+            "login": "humor4fun"
+          },
+          "comments": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          },
+          "reviews": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          },
+          "commits": {
+            "totalCount": 1,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": "MQ"
+            },
+            "nodes": [
+              {
+                "commit": {
+                  "oid": "378677e716dd245510cc7450d0f4ddf3154effc4",
+                  "message": "Adding authentication login flow, and authenticated API call to pull content",
+                  "authoredDate": "2025-02-08T02:38:53Z",
+                  "committedDate": "2025-02-08T02:38:53Z"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "number": 9,
+          "title": "Confine playlist output and cleanup to owned workspaces",
+          "body": "## Problem and behavior\n\nCloses #2. A remote playlist title of `..` selected the parent folder for recursive deletion; category/card ID could escape archive paths. Existing title-named folders were reused and later removed.\n\n## Fix\n\n- Allocate an exclusive `.yje-work-*` workspace under the resolved selected directory for each playlist.\n- Record the workspace filesystem identity and refuse cleanup after replacement or symlink substitution.\n- Sanitize all filename components, including control characters, Windows reserved names and dot-only names; cap UTF-8 byte length.\n- Anchor JSON and archive output paths to the selected directory, reject existing symlinks, and retain the archive extension.\n- Close the library handle before archiving.\n\n## Verification\n\nPython 3.12: `python -m unittest discover -s tests -v` passes 4 tests; `python -m py_compile YOTO.py archive_safety.py login.py` passes; `git diff --check` passes (local Git recognizes existing CRLF line endings).\n\nTests cover traversal/absolute/Windows names, symlink substitution, independently owned workspaces, and actual `process_json` function bodies against synthetic malicious metadata. Existing user files survive. The test harness extracts the production function bodies through AST without starting Tk or authenticating.\n\n## Scope and rollback\n\nOne independently reversible filesystem-containment commit. Archive failure recovery (#3), output privacy (#4), login, network limits and documentation are separate follow-up PRs. No real account or media data was used. Repository visibility remains private. Revert this PR to restore prior path behavior; existing user data is not migrated or deleted.\n",
+          "url": "https://github.com/yack-order/YOTO-json-extractor-v2/pull/9",
+          "state": "MERGED",
+          "createdAt": "2026-10-31T18:33:59Z",
+          "updatedAt": "2026-10-31T18:34:09Z",
+          "closedAt": "2026-10-31T18:34:09Z",
+          "mergedAt": "2026-10-31T18:34:09Z",
+          "author": {
+            "login": "humor4fun"
+          },
+          "baseRefName": "main",
+          "headRefName": "codex/confine-playlist-output",
+          "baseRefOid": "6dcf988a1acc5a69158e603eda55027981bc75cc",
+          "headRefOid": "c5efcfb23ed9c60315f6f3c3ccf05c4cab1dda6c",
+          "mergeCommit": {
+            "oid": "764e60cafe6f926a5590c98cfcb5cd65bd8c6fad"
+          },
+          "mergedBy": {
+            "login": "humor4fun"
+          },
+          "comments": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          },
+          "reviews": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          },
+          "commits": {
+            "totalCount": 1,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": "MQ"
+            },
+            "nodes": [
+              {
+                "commit": {
+                  "oid": "c5efcfb23ed9c60315f6f3c3ccf05c4cab1dda6c",
+                  "message": "fix: confine playlist files to owned output workspaces\n\nRemote titles could select parent directories for deletion, and category/card ID could escape archive paths. Use unique owned workspaces, portable bounded names and rooted output paths; refuse symlink outputs or replaced workspaces. Preserve pre-existing playlist folders.\n\nVerification: four Python 3.12 regression tests, source compilation and whitespace checks pass. Tests exercise production processing with synthetic metadata and existing user files.\n\nRollback: revert this commit independently; no user-data migration is performed. Archive failure recovery and privacy remain separately tracked.",
+                  "authoredDate": "2026-10-31T18:33:49Z",
+                  "committedDate": "2026-10-31T18:33:49Z"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "number": 10,
+          "title": "Verify archives before publication and retain downloads on failure",
+          "body": "Closes #3.\n\n## Problem and resulting behavior\n\nAn archive write exception previously fell through to recursive source deletion. Archives also replaced same-name outputs without verification. A failed write or integrity check now raises failure and retains the unique download workspace for recovery; success publishes a verified archive and only then cleans up.\n\n## Implementation\n\nCreate a private temporary archive beside the final destination. Flush/fsync it, reopen it, compare the complete member manifest with the source and run py7zr CRC verification. Publish via a hard link that atomically fails if the destination already exists; select a numbered suffix on collision. Always remove the temporary archive, never replace an existing archive. Filesystems without hard-link support fail safely and retain downloads.\n\n## Verification\n\n`python -m unittest discover -s tests -v`: 8 passing tests under Python 3.12 with py7zr 1.1.4. A real 7z archive is created, extracted and its binary payload compared byte for byte. Injected write failure, integrity failure and actual application compression failure all preserve source files; repeated output names preserve the previous archive. `python -m py_compile YOTO.py archive_safety.py` and `git diff --check` pass.\n\n## Rollback and limits\n\nRevert this PR independently to undo verified archive publishing/recovery. No existing archives are changed and no account content is used. Workspace confinement is the separately merged #9. Privacy, login, networking and dependency work remain separately tracked. Repository stays private.\n",
+          "url": "https://github.com/yack-order/YOTO-json-extractor-v2/pull/10",
+          "state": "MERGED",
+          "createdAt": "2026-10-31T18:35:24Z",
+          "updatedAt": "2026-10-31T18:35:34Z",
+          "closedAt": "2026-10-31T18:35:34Z",
+          "mergedAt": "2026-10-31T18:35:34Z",
+          "author": {
+            "login": "humor4fun"
+          },
+          "baseRefName": "main",
+          "headRefName": "codex/retain-failed-archives",
+          "baseRefOid": "764e60cafe6f926a5590c98cfcb5cd65bd8c6fad",
+          "headRefOid": "a08cdff2d6bd7b5381b47c6d0241ea10a0056ec8",
+          "mergeCommit": {
+            "oid": "d4a78d72280d57ec202fb88d92115147b77cd5de"
+          },
+          "mergedBy": {
+            "login": "humor4fun"
+          },
+          "comments": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          },
+          "reviews": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          },
+          "commits": {
+            "totalCount": 1,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": "MQ"
+            },
+            "nodes": [
+              {
+                "commit": {
+                  "oid": "a08cdff2d6bd7b5381b47c6d0241ea10a0056ec8",
+                  "message": "fix: preserve downloads until archive verification succeeds\n\nCloses #3.\n\n## Problem and resulting behavior\n\nAn archive write exception previously fell through to recursive source deletion. Archives also replaced same-name outputs without verification. A failed write or integrity check now raises failure and retains the unique download workspace for recovery; success publishes a verified archive and only then cleans up.\n\n## Implementation\n\nCreate a private temporary archive beside the final destination. Flush/fsync it, reopen it, compare the complete member manifest with the source and run py7zr CRC verification. Publish via a hard link that atomically fails if the destination already exists; select a numbered suffix on collision. Always remove the temporary archive, never replace an existing archive. Filesystems without hard-link support fail safely and retain downloads.\n\n## Verification\n\n`python -m unittest discover -s tests -v`: 8 passing tests under Python 3.12 with py7zr 1.1.4. A real 7z archive is created, extracted and its binary payload compared byte for byte. Injected write failure, integrity failure and actual application compression failure all preserve source files; repeated output names preserve the previous archive. `python -m py_compile YOTO.py archive_safety.py` and `git diff --check` pass.\n\n## Rollback and limits\n\nRevert this PR independently to undo verified archive publishing/recovery. No existing archives are changed and no account content is used. Workspace confinement is the separately merged #9. Privacy, login, networking and dependency work remain separately tracked. Repository stays private.",
+                  "authoredDate": "2026-10-31T18:35:19Z",
+                  "committedDate": "2026-10-31T18:35:19Z"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "number": 11,
+          "title": "Redact protected data in logs, metadata, CSV and JSON exports",
+          "body": "Closes #4.\n\n## Problem and resulting behavior\n\nProtected input URLs, signed media URLs and complete diagnostic JSON could be persisted in plaintext. All textual output boundaries now redact private URLs, credentials and contact data; runtime downloads still use the original in-memory data. Clean mode never writes diagnostic JSON. Keep/Only explicitly produce scrubbed JSON with unique names, not untouched originals.\n\n## Implementation\n\n- Central privacy module redacts URLs, email, bearer/key/token strings, JWTs and known sensitive values. Recursively omit credential/contact/account fields in JSON.\n- Preserve only an explicit `shareLinkUrl` from a nonempty non-Yoto `userId` on a non-official/non-discover card, on exact HTTPS Yoto sharing hosts; unknown classification fails closed. Input URL possession or CardID alone never makes a URL public.\n- Redact GUI logs, completed/failed queues, log exports, metadata text files and CSV. Exceptions expose their class only, without messages, tracebacks or callback URLs.\n- Start a new `YJE-library-redacted.csv`, quote CSV cells and neutralize spreadsheet formulas. Previous local outputs remain untouched and may still contain private data.\n- Use exclusive/private JSON/log files, reject symlink text outputs, and close metadata handles on every processing exit.\n- Expand Git ignores for credentials, raw JSON/CSV/logs/archives/media, recovery workspaces and build/cache files.\n\n## Verification\n\n`python -W error::ResourceWarning -m unittest discover -s tests -v`: 15 tests pass. Includes actual production Clean/Only error paths, metadata/CSV generation, logger/stderr behavior, nested JSON secrets, official versus public share classification, existing filename preservation and `git check-ignore` checks. Fixtures contain synthetic secrets only. Source compilation and `git diff --check` pass.\n\n## Rollback and limitations\n\nRevert this PR to undo the output boundary and ignore rules; no original source data or prior outputs are rewritten/deleted. Redaction is defense in depth, not proof that arbitrary user-authored content contains no private information. Review exports before sharing; downloaded audio/artwork is still private content. Live provider classification was not exercised with real accounts. Repository remains private.\n",
+          "url": "https://github.com/yack-order/YOTO-json-extractor-v2/pull/11",
+          "state": "MERGED",
+          "createdAt": "2026-10-31T18:38:53Z",
+          "updatedAt": "2026-10-31T18:39:11Z",
+          "closedAt": "2026-10-31T18:39:11Z",
+          "mergedAt": "2026-10-31T18:39:11Z",
+          "author": {
+            "login": "humor4fun"
+          },
+          "baseRefName": "main",
+          "headRefName": "codex/redact-private-exports",
+          "baseRefOid": "d4a78d72280d57ec202fb88d92115147b77cd5de",
+          "headRefOid": "5415dde10dacd4fcc5d9f51043a007332edf97be",
+          "mergeCommit": {
+            "oid": "d3a06b24545c54b2372c0817de5958fcd46c5a47"
+          },
+          "mergedBy": {
+            "login": "humor4fun"
+          },
+          "comments": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          },
+          "reviews": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          },
+          "commits": {
+            "totalCount": 1,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": "MQ"
+            },
+            "nodes": [
+              {
+                "commit": {
+                  "oid": "5415dde10dacd4fcc5d9f51043a007332edf97be",
+                  "message": "fix: redact protected data at persistent output boundaries\n\nCloses #4.\n\n## Problem and resulting behavior\n\nProtected input URLs, signed media URLs and complete diagnostic JSON could be persisted in plaintext. All textual output boundaries now redact private URLs, credentials and contact data; runtime downloads still use the original in-memory data. Clean mode never writes diagnostic JSON. Keep/Only explicitly produce scrubbed JSON with unique names, not untouched originals.\n\n## Implementation\n\n- Central privacy module redacts URLs, email, bearer/key/token strings, JWTs and known sensitive values. Recursively omit credential/contact/account fields in JSON.\n- Preserve only an explicit `shareLinkUrl` from a nonempty non-Yoto `userId` on a non-official/non-discover card, on exact HTTPS Yoto sharing hosts; unknown classification fails closed. Input URL possession or CardID alone never makes a URL public.\n- Redact GUI logs, completed/failed queues, log exports, metadata text files and CSV. Exceptions expose their class only, without messages, tracebacks or callback URLs.\n- Start a new `YJE-library-redacted.csv`, quote CSV cells and neutralize spreadsheet formulas. Previous local outputs remain untouched and may still contain private data.\n- Use exclusive/private JSON/log files, reject symlink text outputs, and close metadata handles on every processing exit.\n- Expand Git ignores for credentials, raw JSON/CSV/logs/archives/media, recovery workspaces and build/cache files.\n\n## Verification\n\n`python -W error::ResourceWarning -m unittest discover -s tests -v`: 15 tests pass. Includes actual production Clean/Only error paths, metadata/CSV generation, logger/stderr behavior, nested JSON secrets, official versus public share classification, existing filename preservation and `git check-ignore` checks. Fixtures contain synthetic secrets only. Source compilation and `git diff --check` pass.\n\n## Rollback and limitations\n\nRevert this PR to undo the output boundary and ignore rules; no original source data or prior outputs are rewritten/deleted. Redaction is defense in depth, not proof that arbitrary user-authored content contains no private information. Review exports before sharing; downloaded audio/artwork is still private content. Live provider classification was not exercised with real accounts. Repository remains private.",
+                  "authoredDate": "2026-10-31T18:38:48Z",
+                  "committedDate": "2026-10-31T18:38:48Z"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "number": 12,
+          "title": "Validate login callbacks with state and Authorization Code PKCE",
+          "body": "Closes #5.\n\n## Problem and resulting behavior\n\nThe prior Selenium flow accepted any URL containing the callback substring, did not locally correlate the returned token with login state, loaded remote JavaScript and printed the full callback on errors. Login now uses Yoto's documented Authorization Code + S256 PKCE flow in the user's normal browser, with an exact loopback callback and a fresh unpredictable state/verifier per attempt.\n\n## Implementation\n\nBind `127.0.0.1:3000` before opening the browser. Validate exact origin/path, Host header, query cardinality, nonempty code, ASCII state and constant-time state equality. Reject token fragments, duplicate parameters, error responses and mismatches. Suppress HTTP access logs and send no-store/no-referrer callback responses. Close the listener through a context manager on success, timeout and exceptions. The browser remains the user's normal browser; no WebDriver process is started.\n\nExchange the single-use code at the fixed HTTPS Yoto token endpoint with the PKCE verifier, no client secret, no redirects, socket timeouts, a 30-second checked read deadline and a 64 KiB response cap. Only a nonempty Bearer access token with positive expiry is retained in memory. No refresh/profile scopes or persisted tokens.\n\n## Setup change\n\nSet `YOTO_CLIENT_ID` to your own Yoto public client registration with `http://127.0.0.1:3000/callback` allowed. The previous hardcoded third-party client identifier is no longer used. Missing registration or an occupied port fails closed. Full setup and compatibility limits will be consolidated in the documentation PR (#8).\n\n## Verification\n\n20 tests pass with `python -m unittest discover -s tests -v`; source compilation and `git diff --check` pass. New tests cover spoofed destinations, wrong ports/paths/schemes, Unicode/mismatched/duplicate state, duplicate or empty codes, fragment/token rejection, PKCE derivation, exchange size limits, redirect prohibition, listener cleanup and secret-free failure messages. Provider requests and browser opening are mocked; no actual account login was performed.\n\n## References and rollback\n\nImplementation follows [Yoto browser authentication](https://yoto.dev/authentication/browser-auth/), [authorize parameters](https://yoto.dev/api/authentication/get-authorize/) and [read-only scopes](https://yoto.dev/authentication/scopes/). Revert this PR independently to restore the previous login flow. End-to-end provider approval and access to protected content remain unverified and must not be advertised as tested. Repository remains private.\n",
+          "url": "https://github.com/yack-order/YOTO-json-extractor-v2/pull/12",
+          "state": "MERGED",
+          "createdAt": "2026-10-31T18:41:30Z",
+          "updatedAt": "2026-10-31T18:41:41Z",
+          "closedAt": "2026-10-31T18:41:41Z",
+          "mergedAt": "2026-10-31T18:41:41Z",
+          "author": {
+            "login": "humor4fun"
+          },
+          "baseRefName": "main",
+          "headRefName": "codex/validate-login-callback",
+          "baseRefOid": "d3a06b24545c54b2372c0817de5958fcd46c5a47",
+          "headRefOid": "d11dfe9282f9b93f403743ddae2115eead331f3b",
+          "mergeCommit": {
+            "oid": "3aa9f0cb24e392d1d496a724bb573e4965adec1f"
+          },
+          "mergedBy": {
+            "login": "humor4fun"
+          },
+          "comments": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          },
+          "reviews": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          },
+          "commits": {
+            "totalCount": 1,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": "MQ"
+            },
+            "nodes": [
+              {
+                "commit": {
+                  "oid": "d11dfe9282f9b93f403743ddae2115eead331f3b",
+                  "message": "fix: validate loopback login with state and PKCE\n\nCloses #5.\n\n## Problem and resulting behavior\n\nThe prior Selenium flow accepted any URL containing the callback substring, did not locally correlate the returned token with login state, loaded remote JavaScript and printed the full callback on errors. Login now uses Yoto's documented Authorization Code + S256 PKCE flow in the user's normal browser, with an exact loopback callback and a fresh unpredictable state/verifier per attempt.\n\n## Implementation\n\nBind `127.0.0.1:3000` before opening the browser. Validate exact origin/path, Host header, query cardinality, nonempty code, ASCII state and constant-time state equality. Reject token fragments, duplicate parameters, error responses and mismatches. Suppress HTTP access logs and send no-store/no-referrer callback responses. Close the listener through a context manager on success, timeout and exceptions. The browser remains the user's normal browser; no WebDriver process is started.\n\nExchange the single-use code at the fixed HTTPS Yoto token endpoint with the PKCE verifier, no client secret, no redirects, socket timeouts, a 30-second checked read deadline and a 64 KiB response cap. Only a nonempty Bearer access token with positive expiry is retained in memory. No refresh/profile scopes or persisted tokens.\n\n## Setup change\n\nSet `YOTO_CLIENT_ID` to your own Yoto public client registration with `http://127.0.0.1:3000/callback` allowed. The previous hardcoded third-party client identifier is no longer used. Missing registration or an occupied port fails closed. Full setup and compatibility limits will be consolidated in the documentation PR (#8).\n\n## Verification\n\n20 tests pass with `python -m unittest discover -s tests -v`; source compilation and `git diff --check` pass. New tests cover spoofed destinations, wrong ports/paths/schemes, Unicode/mismatched/duplicate state, duplicate or empty codes, fragment/token rejection, PKCE derivation, exchange size limits, redirect prohibition, listener cleanup and secret-free failure messages. Provider requests and browser opening are mocked; no actual account login was performed.\n\n## References and rollback\n\nImplementation follows [Yoto browser authentication](https://yoto.dev/authentication/browser-auth/), [authorize parameters](https://yoto.dev/api/authentication/get-authorize/) and [read-only scopes](https://yoto.dev/authentication/scopes/). Revert this PR independently to restore the previous login flow. End-to-end provider approval and access to protected content remain unverified and must not be advertised as tested. Repository remains private.",
+                  "authoredDate": "2026-10-31T18:41:26Z",
+                  "committedDate": "2026-10-31T18:41:26Z"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "number": 13,
+          "title": "Bound HTTPS downloads and prevent bearer-token forwarding",
+          "body": "Closes #6.\n\n## Problem and resulting behavior\n\nA timed thread join previously left requests running without socket timeouts or response size limits. Each batch now performs its downloads directly through a bounded HTTPS client, closes every response/session and propagates sanitized failures. A missing or failed audio download aborts archive publication and preserves the workspace. Batch summaries report failures instead of unconditional success.\n\n## Implementation\n\n- 5-second connect / 10-second read-inactivity timeouts and a 120-second elapsed deadline checked before/after each bounded read. A blocked read can add up to the read timeout; OS DNS resolution and initial header handling are not a hard wall-clock guarantee.\n- Cap metadata at 8 MiB, images at 16 MiB and each media file at 128 MiB. Check declared lengths and actual streamed bytes. Request identity encoding and reject encoded responses so decompression cannot bypass limits.\n- Require HTTPS without URL userinfo or custom ports. Manually follow at most three unauthenticated redirects, validating every destination. Reject local/non-public DNS answers as defense in depth.\n- Restrict authenticated requests to `https://api.yotoplay.com/card/<five-character ID>` and prohibit authenticated redirects entirely. Use the supplied token parameter, eliminating the prior global-token bug.\n- Disable implicit .netrc credentials and environment proxies for both downloads and token exchanges. No external request thread is created; response snapshots omit credential-bearing prepared requests.\n- Validate card IDs by exact host/path parsing rather than substring regex matching.\n\n## Verification\n\n30 regression tests pass with `python -m unittest discover -s tests -v`. Coverage includes socket/elapsed limits, declared and streamed overflow, cleanup on exceptions, encoded responses, redirects/downgrades/private destinations, bearer destination restrictions, strict card parsing, the production adapter and missing-audio recovery. Source compilation and `git diff --check` pass. A real unauthenticated `fetch_url('https://example.com', max_bytes=1048576)` returned HTTP 200 and 577 bytes of HTML using the installed Requests/urllib3 stack.\n\n## Compatibility and rollback\n\nHTTP-only/live/infinite streams, encoded responses, unusually large tracks, environment proxy setups and non-public destinations intentionally fail safely. This desktop client is not a public fetch service; DNS revalidation is not a complete DNS-rebinding defense. Revert this PR independently to restore the old networking behavior. No Yoto account or protected content was accessed. Repository remains private.\n",
+          "url": "https://github.com/yack-order/YOTO-json-extractor-v2/pull/13",
+          "state": "MERGED",
+          "createdAt": "2026-10-31T18:44:56Z",
+          "updatedAt": "2026-10-31T18:45:08Z",
+          "closedAt": "2026-10-31T18:45:07Z",
+          "mergedAt": "2026-10-31T18:45:07Z",
+          "author": {
+            "login": "humor4fun"
+          },
+          "baseRefName": "main",
+          "headRefName": "codex/bound-http-downloads",
+          "baseRefOid": "3aa9f0cb24e392d1d496a724bb573e4965adec1f",
+          "headRefOid": "64ab8e8acda85e22c80af857a99e1e3a14cfe6aa",
+          "mergeCommit": {
+            "oid": "dc28154f59fa7476e832796bced3adf3c590cf15"
+          },
+          "mergedBy": {
+            "login": "humor4fun"
+          },
+          "comments": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          },
+          "reviews": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          },
+          "commits": {
+            "totalCount": 1,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": "MQ"
+            },
+            "nodes": [
+              {
+                "commit": {
+                  "oid": "64ab8e8acda85e22c80af857a99e1e3a14cfe6aa",
+                  "message": "fix: bound HTTPS downloads and contain authentication headers\n\nCloses #6.\n\n## Problem and resulting behavior\n\nA timed thread join previously left requests running without socket timeouts or response size limits. Each batch now performs its downloads directly through a bounded HTTPS client, closes every response/session and propagates sanitized failures. A missing or failed audio download aborts archive publication and preserves the workspace. Batch summaries report failures instead of unconditional success.\n\n## Implementation\n\n- 5-second connect / 10-second read-inactivity timeouts and a 120-second elapsed deadline checked before/after each bounded read. A blocked read can add up to the read timeout; OS DNS resolution and initial header handling are not a hard wall-clock guarantee.\n- Cap metadata at 8 MiB, images at 16 MiB and each media file at 128 MiB. Check declared lengths and actual streamed bytes. Request identity encoding and reject encoded responses so decompression cannot bypass limits.\n- Require HTTPS without URL userinfo or custom ports. Manually follow at most three unauthenticated redirects, validating every destination. Reject local/non-public DNS answers as defense in depth.\n- Restrict authenticated requests to `https://api.yotoplay.com/card/<five-character ID>` and prohibit authenticated redirects entirely. Use the supplied token parameter, eliminating the prior global-token bug.\n- Disable implicit .netrc credentials and environment proxies for both downloads and token exchanges. No external request thread is created; response snapshots omit credential-bearing prepared requests.\n- Validate card IDs by exact host/path parsing rather than substring regex matching.\n\n## Verification\n\n30 regression tests pass with `python -m unittest discover -s tests -v`. Coverage includes socket/elapsed limits, declared and streamed overflow, cleanup on exceptions, encoded responses, redirects/downgrades/private destinations, bearer destination restrictions, strict card parsing, the production adapter and missing-audio recovery. Source compilation and `git diff --check` pass. A real unauthenticated `fetch_url('https://example.com', max_bytes=1048576)` returned HTTP 200 and 577 bytes of HTML using the installed Requests/urllib3 stack.\n\n## Compatibility and rollback\n\nHTTP-only/live/infinite streams, encoded responses, unusually large tracks, environment proxy setups and non-public destinations intentionally fail safely. This desktop client is not a public fetch service; DNS revalidation is not a complete DNS-rebinding defense. Revert this PR independently to restore the old networking behavior. No Yoto account or protected content was accessed. Repository remains private.",
+                  "authoredDate": "2026-10-31T18:44:52Z",
+                  "committedDate": "2026-10-31T18:44:52Z"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "number": 14,
+          "title": "Pin audited dependencies and add safety and GUI verification in CI",
+          "body": "Closes #7.\n\n## Problem and resulting behavior\n\nUnpinned and duplicate runtime dependencies made installations unpredictable. The actual runtime dependency set now has a complete hash-verified Python 3.12 lock, and verification tooling has a separate aligned lock. Unused Selenium/WebDriver, CTkMessagebox and Mutagen imports/dependencies are removed.\n\n## Implementation\n\n- `requirements.in`: five direct runtime libraries. `requirements.txt`: 22 exact transitive/runtime versions with distribution SHA-256 hashes.\n- `requirements-dev.in`: pip-audit/pip-tools constrained by runtime versions. `requirements-dev.txt`: 35 exact verification/tooling versions including bootstrap packages, with hashes.\n- Read-only GitHub Actions workflow on PRs and main, using immutable official action commits. Installs hashed locks, checks dependency consistency, compiles code, runs regression tests, builds the real GUI under Xvfb and performs strict runtime/tooling audits.\n- GUI smoke uses synthetic data and no account: constructs widgets, exercises the JSON mode callback and scrubbed JSON export, and verifies missing-client login fails closed. Added a real socket-pair callback-handler regression including Host checking and absence of access logs.\n\n## Local verification\n\nA second clean Python 3.12 venv installed both lockfiles with `--require-hashes`; `pip check` reports no broken requirements. All 31 regression tests pass there. Source compilation and `git diff --check` pass. Strict `pip-audit -r <lock> --require-hashes --disable-pip --strict` audited all 22 runtime and all 35 tooling entries with zero known vulnerabilities and zero skipped/missing entries on 2026-10-31. Disabling the resolver for audits prevents bootstrap packages from being silently omitted; installation hashes are verified separately.\n\n## CI and limits\n\nThe local Homebrew Python lacks `_tkinter`; the real GUI smoke passed on the Linux CI virtual display. [Hosted run 41231487775](https://github.com/yack-order/YOTO-json-extractor-v2/actions/runs/41231487775) succeeded on this PR head, including hashed installation, all 31 regressions, GUI construction/output checks and both strict audits. No macOS/Windows GUI or real Yoto account login is claimed as verified. Lock generation/auditing used package indexes/advisories, not user data. Advisory results are time-sensitive, not a security guarantee.\n\n## Rollback\n\nRevert this PR independently to undo dependency/CI changes. Runtime safety fixes in earlier PRs are retained. No account tokens, data exports, existing history or repository visibility are changed.\n",
+          "url": "https://github.com/yack-order/YOTO-json-extractor-v2/pull/14",
+          "state": "MERGED",
+          "createdAt": "2026-10-31T18:52:11Z",
+          "updatedAt": "2026-10-31T18:53:09Z",
+          "closedAt": "2026-10-31T18:53:09Z",
+          "mergedAt": "2026-10-31T18:53:09Z",
+          "author": {
+            "login": "humor4fun"
+          },
+          "baseRefName": "main",
+          "headRefName": "codex/pin-audit-dependencies",
+          "baseRefOid": "dc28154f59fa7476e832796bced3adf3c590cf15",
+          "headRefOid": "a3b283ed6f481588d1b11a6b925d526ac3efaaed",
+          "mergeCommit": {
+            "oid": "65fb189edbf160b4813459cc06d4a97a0d0e535e"
+          },
+          "mergedBy": {
+            "login": "humor4fun"
+          },
+          "comments": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          },
+          "reviews": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          },
+          "commits": {
+            "totalCount": 1,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": "MQ"
+            },
+            "nodes": [
+              {
+                "commit": {
+                  "oid": "a3b283ed6f481588d1b11a6b925d526ac3efaaed",
+                  "message": "build: pin audited dependencies and verify safety in CI\n\nCloses #7.\n\n## Problem and resulting behavior\n\nUnpinned and duplicate runtime dependencies made installations unpredictable. The actual runtime dependency set now has a complete hash-verified Python 3.12 lock, and verification tooling has a separate aligned lock. Unused Selenium/WebDriver, CTkMessagebox and Mutagen imports/dependencies are removed.\n\n## Implementation\n\n- `requirements.in`: five direct runtime libraries. `requirements.txt`: 22 exact transitive/runtime versions with distribution SHA-256 hashes.\n- `requirements-dev.in`: pip-audit/pip-tools constrained by runtime versions. `requirements-dev.txt`: 35 exact verification/tooling versions including bootstrap packages, with hashes.\n- Read-only GitHub Actions workflow on PRs and main, using immutable official action commits. Installs hashed locks, checks dependency consistency, compiles code, runs regression tests, builds the real GUI under Xvfb and performs strict runtime/tooling audits.\n- GUI smoke uses synthetic data and no account: constructs widgets, exercises the JSON mode callback and scrubbed JSON export, and verifies missing-client login fails closed. Added a real socket-pair callback-handler regression including Host checking and absence of access logs.\n\n## Local verification\n\nA second clean Python 3.12 venv installed both lockfiles with `--require-hashes`; `pip check` reports no broken requirements. All 31 regression tests pass there. Source compilation and `git diff --check` pass. Strict `pip-audit -r <lock> --require-hashes --disable-pip --strict` audited all 22 runtime and all 35 tooling entries with zero known vulnerabilities and zero skipped/missing entries on 2026-10-31. Disabling the resolver for audits prevents bootstrap packages from being silently omitted; installation hashes are verified separately.\n\n## CI and limits\n\nThe local Homebrew Python lacks `_tkinter`, so the GUI smoke must pass on the Linux CI virtual display before this PR is merged. No macOS/Windows GUI or real Yoto account login is claimed as verified. Lock generation/auditing used package indexes/advisories, not user data. Advisory results are time-sensitive, not a security guarantee.\n\n## Rollback\n\nRevert this PR independently to undo dependency/CI changes. Runtime safety fixes in earlier PRs are retained. No account tokens, data exports, existing history or repository visibility are changed.",
+                  "authoredDate": "2026-10-31T18:52:06Z",
+                  "committedDate": "2026-10-31T18:52:06Z"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "number": 15,
+          "title": "Document safe operation, recovery and public-release verification",
+          "body": "Closes #8.\n\n## Problem and resulting documentation\n\nThe old README cloned the upstream repository, advertised absent executable releases and described metadata embedding that the implementation did not perform. It omitted security-critical setup, data handling, recovery behavior and real verification limits.\n\n## Changes\n\n- Correct clone/setup instructions for this repository, Python 3.12/Tk prerequisites and hashed dependency installation.\n- Describe actual Clean/Keep/Only behavior: optional JSON is scrubbed, never an untouched original; no unsolicited diagnostic dumps.\n- Explain safe workspace/archive handling, collision behavior, recovery after failure, output files, token/URL privacy and the limits of Git ignores and redaction.\n- Document owner-supplied Yoto public client registration, exact loopback callback, scopes, PKCE and session-only token handling, linked to official Yoto docs.\n- Document HTTP/time/size/filesystem compatibility limits and commands to reproduce regression tests, GUI smoke, strict audits and dependency lock updates.\n- Preserve upstream MIT attribution, license and existing support link; add private security-reporting instructions that prohibit sensitive details in ordinary issues.\n- Add PUBLIC_RELEASE_REVIEW.md mapping every finding to its independent issue/PR, verification evidence and remaining live-account/platform limits. Historical refs are preserved and visibility stays private.\n\n## Verification\n\nMarkdown code fences and relative file links checked. `git diff --check` passes. Previous code CI run 41231487775 passed all 31 regressions, real Xvfb GUI smoke and both strict audits. Gitleaks 8.30.1 (release checksum verified) found no leaks across all fetched Git refs or current files. The full hosted workflow passed on this documentation PR head: [run 41231734243](https://github.com/yack-order/YOTO-json-extractor-v2/actions/runs/41231734243), including all 31 regressions, real GUI smoke under Xvfb, hashed installation and both strict audits.\n\n## Rollback and limits\n\nDocumentation-only commit, independently reversible. No runtime code, data or repository visibility change. No claim of real provider login, protected-content access, Windows GUI or macOS GUI verification. Earlier generated private files are not retroactively scrubbed. Publishing remains the owner's separate decision.\n",
+          "url": "https://github.com/yack-order/YOTO-json-extractor-v2/pull/15",
+          "state": "MERGED",
+          "createdAt": "2026-10-31T18:55:23Z",
+          "updatedAt": "2026-10-31T18:56:56Z",
+          "closedAt": "2026-10-31T18:56:56Z",
+          "mergedAt": "2026-10-31T18:56:56Z",
+          "author": {
+            "login": "humor4fun"
+          },
+          "baseRefName": "main",
+          "headRefName": "codex/document-safe-publication",
+          "baseRefOid": "65fb189edbf160b4813459cc06d4a97a0d0e535e",
+          "headRefOid": "73025ea65ea0d9f9229936d767c880c2bbbb258b",
+          "mergeCommit": {
+            "oid": "2dac6bd3a63b103e8c6e3fe130cc0e09e51ed131"
+          },
+          "mergedBy": {
+            "login": "humor4fun"
+          },
+          "comments": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          },
+          "reviews": {
+            "totalCount": 0,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": []
+          },
+          "commits": {
+            "totalCount": 1,
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": "MQ"
+            },
+            "nodes": [
+              {
+                "commit": {
+                  "oid": "73025ea65ea0d9f9229936d767c880c2bbbb258b",
+                  "message": "docs: document safe use, recovery and public-release verification\n\nCloses #8.\n\n## Problem and resulting documentation\n\nThe old README cloned the upstream repository, advertised absent executable releases and described metadata embedding that the implementation did not perform. It omitted security-critical setup, data handling, recovery behavior and real verification limits.\n\n## Changes\n\n- Correct clone/setup instructions for this repository, Python 3.12/Tk prerequisites and hashed dependency installation.\n- Describe actual Clean/Keep/Only behavior: optional JSON is scrubbed, never an untouched original; no unsolicited diagnostic dumps.\n- Explain safe workspace/archive handling, collision behavior, recovery after failure, output files, token/URL privacy and the limits of Git ignores and redaction.\n- Document owner-supplied Yoto public client registration, exact loopback callback, scopes, PKCE and session-only token handling, linked to official Yoto docs.\n- Document HTTP/time/size/filesystem compatibility limits and commands to reproduce regression tests, GUI smoke, strict audits and dependency lock updates.\n- Preserve upstream MIT attribution, license and existing support link; add private security-reporting instructions that prohibit sensitive details in ordinary issues.\n- Add PUBLIC_RELEASE_REVIEW.md mapping every finding to its independent issue/PR, verification evidence and remaining live-account/platform limits. Historical refs are preserved and visibility stays private.\n\n## Verification\n\nMarkdown code fences and relative file links checked. `git diff --check` passes. Previous code CI run 41231487775 passed all 31 regressions, real Xvfb GUI smoke and both strict audits. Gitleaks 8.30.1 (release checksum verified) found no leaks across all fetched Git refs or current files. The full hosted workflow also runs on this documentation PR before merge.\n\n## Rollback and limits\n\nDocumentation-only commit, independently reversible. No runtime code, data or repository visibility change. No claim of real provider login, protected-content access, Windows GUI or macOS GUI verification. Earlier generated private files are not retroactively scrubbed. Publishing remains the owner's separate decision.",
+                  "authoredDate": "2026-10-31T18:55:14Z",
+                  "committedDate": "2026-10-31T18:55:14Z"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

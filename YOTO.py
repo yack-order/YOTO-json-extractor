@@ -1,4 +1,5 @@
 import os
+import sys
 import csv
 from contextlib import ExitStack
 import customtkinter as ctk
@@ -31,6 +32,12 @@ threads_can_run = True
 save_directory = os.getcwd()
 access_token = None
 keep_json = JSON_STATUS['clean']
+
+def resource_path(relative_path):
+    # Upstream 636e4f1: resources follow the source/bundle, not the output CWD.
+    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
+
 
 def compress_folder(folder_path, output_path):
     return create_verified_archive(folder_path, output_path)
@@ -145,12 +152,13 @@ def stop_threads(): # currently this doesn't work so i've just disabled/removed 
 
 def toggle_silent_mode():
     global silent_mode
-    if silent_mode_toggle.get() == "on":
-        announce_message("Settings changed: Silent Mode Enabled.", MESSAGE_TYPES['info'])
-        silent_mode = True
-    if silent_mode_toggle.get() == "off":
-        announce_message("Settings changed: Silent Mode Disabled.", MESSAGE_TYPES['info'])
-        silent_mode = False
+    value = silent_mode_toggle.get()
+    if value not in ('on', 'off'):
+        return
+    silent_mode = value == 'on'
+    setting = 'Enabled' if silent_mode else 'Disabled'
+    announce_message(f"Settings changed: Silent Mode {setting}", MESSAGE_TYPES['info'])
+
 
 def getExtensionFromContentType(contentType=None):
     match contentType:
@@ -217,7 +225,7 @@ def process_urls(urls, keep_json):
     while index < len(urls) and threads_can_run:
         announce_message(f"Now procesing {index + 1} of {total_urls}", MESSAGE_TYPES['info'])
         attempts += 1 # keep track of how many times a URL has been tried, skip it if we have tried it too many times.
-        url = urls[index] #BUG: this line keeps throwing out of bounds exceptions
+        url = urls[index] # The local URL list and loop bound remain unchanged.
         url_status = STATUS['ok']
 
         try:
@@ -236,7 +244,7 @@ def process_urls(urls, keep_json):
 
     #after processing, return the UI to normal state
     download_button.configure(state=tk.NORMAL, text="Extract (non Yoto Original) files")
-    progress_bar.pack(pady=12)
+    progress_bar.pack_forget()
     announce_message(f"Processing finished: {completed_urls - failed_urls} succeeded, {failed_urls} failed.", MESSAGE_TYPES['info'])
     save_logs()
 
@@ -251,7 +259,7 @@ def process_yoto_original_urls(urls, keep_json):
     while index < len(urls) and threads_can_run:
         announce_message(f"Now procesing {index + 1} of {total_urls}", MESSAGE_TYPES['info'])
         attempts += 1 # keep track of how many times a URL has been tried, skip it if we have tried it too many times.
-        url = urls[index] #BUG: this line keeps throwing out of bounds exceptions
+        url = urls[index] # The local URL list and loop bound remain unchanged.
         url_status = STATUS['ok']
 
         try:
@@ -275,7 +283,7 @@ def process_yoto_original_urls(urls, keep_json):
     save_logs()
 
 def handle_original_url(url, attempts, keep_json):
-    if attempts >= 3:
+    if attempts > 3:
         announce_message(f"\tURL has been tried 3 times and not able to complete.", MESSAGE_TYPES['error'])
         return STATUS['fail']
 
@@ -301,7 +309,7 @@ def handle_original_url(url, attempts, keep_json):
     return handle_json_data(json_data, url, keep_json)
 
 def handle_url(url, attempts, keep_json):
-    if attempts >= 10:
+    if attempts > 10:
         announce_message(f"\tURL has been tried 10 times and not able to complete.", MESSAGE_TYPES['error'])
         return STATUS['fail']
 
@@ -345,7 +353,7 @@ def handle_json_data(json_data, url, keep_json):
 
 def update_progress(url, url_status, index, completed_urls, attempts, total_urls, button):
     if url_status == STATUS['retry']:
-        attempts += 1 # increase the error counter and repeat the same URL
+        pass # The batch loop increments attempts once per actual attempt.
     else:
         attempts = 0 # reset the error counter
         index += 1 # move to the next URL
@@ -423,14 +431,14 @@ def _process_json(data, title, url, files):
     except KeyError as ex:
         announce_message(f"\t\t\tMetadata parse error: object not found: props/pageProps/card/metadata/author", MESSAGE_TYPES['error'], e=ex)
 
-        try:
-            description = data['props']['pageProps']['card']['metadata'].get('description', metaundef)
-            if description is None:
-                description = metaundef  # treat explicit null same as missing
-            announce_message(f"\t\t\tDescription: {description}", MESSAGE_TYPES['info'])
-            if description is not metaundef: meta_card_file.write('Description:: ' + description + '\n')
-        except KeyError as ex:
-            announce_message(f"\t\t\tMetadata parse error: object not found: props/pageProps/card/metadata/description", MESSAGE_TYPES['error'], e=ex)
+    try:
+        description = data['props']['pageProps']['card']['metadata'].get('description', metaundef)
+        if description is None:
+            description = metaundef  # treat explicit null same as missing
+        announce_message(f"\t\t\tDescription: {description}", MESSAGE_TYPES['info'])
+        if description is not metaundef: meta_card_file.write('Description:: ' + description + '\n')
+    except KeyError as ex:
+        announce_message(f"\t\t\tMetadata parse error: object not found: props/pageProps/card/metadata/description", MESSAGE_TYPES['error'], e=ex)
     meta_card_file.write('\n')
     announce_message(f"\t\t'Basic' metadata complete.", MESSAGE_TYPES['info'])
 
@@ -797,7 +805,7 @@ root = ctk.CTk()
 root.title("YOTO Json Extractor")
 root.geometry("450x725")
 try:
-    root.iconbitmap(r"YOTO json extractor\YJE.ico")
+    root.iconbitmap(resource_path("YJE.ico"))
 except Exception as ex:
     #announce_message(f"Icon file not found.", MESSAGE_TYPES['warning'], e=ex) #can't send messages to the log textbox when it hasn't been created yet.
     icon_data = base64.b64decode(ICON) # Decode base64 string to bytes
