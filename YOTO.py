@@ -1,4 +1,6 @@
 import os
+import csv
+from contextlib import ExitStack
 import requests
 import customtkinter as ctk
 from CTkMessagebox import CTkMessagebox
@@ -17,6 +19,7 @@ import py7zr
 from datetime import datetime
 import shutil
 import base64
+from privacy import redact_text, scrub_json, register_public_links, export_json, export_log, open_private_text, csv_cell
 from login import get_access_token
 from archive_safety import Workspace, create_verified_archive, output_path, safe_filename
 
@@ -29,10 +32,10 @@ class URLThread(threading.Thread):
 
     def run(self):
         if self.access_token:
-            print(f"Sending request to {self.url} with access token")
+            print("Sending authenticated request")
             self.result = requests.get(self.url, headers={"Authorization": f"Bearer {access_token}"})
         else:
-            print(f"Sending request to {self.url} without access token")
+            print("Sending request")
             self.result = requests.get(self.url)
 
 MESSAGE_TYPES = {"info": "Info", "warning": "Warning", "error": "Error"}
@@ -57,14 +60,12 @@ def compress_folder(folder_path, output_path):
 
 
 def announce_message(message, type=MESSAGE_TYPES['info'], e=None):
+    message = redact_text(message)
     # TODO: add an option to set logging level (info, warning, error)
     # TODO: add logging to a file in addition to the log window
     log_text.insert(index=ctk.END, text=f"{message}\n") #write the message to the log
     if e is not None: #if there's an exception passed in, record that to the log too
-        log_text.insert(index=ctk.END, text=f"Exception: {e}\n")
-        trace = traceback.print_exc()
-        if trace is not None: #print the stacktrace if it exists
-            log_text.insert(index=ctk.END, text=f"Trace: {trace}\n")
+        log_text.insert(index=ctk.END, text=f"Exception type: {e.__class__.__name__}\n")
     if not log_text.tag_ranges(tk.SEL): # check if the textbox is not selected
         log_text.yview_moveto(1.0) # scroll to the bottom
 
@@ -90,7 +91,7 @@ def convert_bytes(num, suffix='B'):
     return f"{num:.1f}Yi{suffix}"
 
 def clean_filename(filename):
-    return safe_filename(filename)
+    return safe_filename(redact_text(filename))
 
 
 def choose_directory():
@@ -234,16 +235,12 @@ def isUnique(list, query):
     return True
 
 def dump_text_to_file(textbox, logtype, folder):
- # this will always write a new file but should never have a filename collision because of the timestamp
-    log_file_path = os.path.join(folder, "logs")
-    os.makedirs(log_file_path, exist_ok=True)
     try:
-        with open(os.path.join(log_file_path, f"YJE-{datetime.today().strftime('%Y-%m-%d_%H-%M-%S')}-{logtype}.log"), 'w', encoding="utf-8") as log_file:
-            log_file.write(textbox.get("0.0", "end"))
-            log_file.close()
-            announce_message(f"{logtype} written to file: {log_file_path}", MESSAGE_TYPES['info'])
-    except IOError as ex:
-            announce_message(f"Error writing {logtype} to file: {log_file_path}", MESSAGE_TYPES['error'], ex)
+        path = export_log(folder, logtype, textbox.get("0.0", "end"))
+        announce_message(f"{logtype} written to file: {path}", MESSAGE_TYPES['info'])
+    except (OSError, ValueError) as ex:
+        announce_message("Could not save redacted log", MESSAGE_TYPES['error'], ex)
+
 
 def save_logs():
     folder = save_directory
@@ -377,38 +374,20 @@ def process_response(response, url, keep_json):
 def handle_json_data(json_data, url, keep_json):
     try:
         card = json_data['props']['pageProps']['card']
-        announce_message(f"\tCard object found.", MESSAGE_TYPES['info'])
-        title = clean_filename(card.get('title','Untitled'))
-        announce_message(f"\tTitle: {title}", MESSAGE_TYPES['info'])
-        json_file_name = output_path(save_directory, f"{title[:170]}.json")
-        
-        if keep_json == JSON_STATUS['keep'] | keep_json == JSON_STATUS['only']:
-                with open(json_file_name, 'w') as json_file:
-                    json.dump(json_data, json_file, indent=4)
-                announce_message(f"\tJSON data stored in {json_file_name}", MESSAGE_TYPES['info'])
-        
-        if keep_json == JSON_STATUS['only']: 
-            announce_message(f"\tSkipping download tasks.", MESSAGE_TYPES['info'])
+        register_public_links(json_data)
+        title = clean_filename(card.get('title', 'Untitled'))
+        if keep_json in (JSON_STATUS['keep'], JSON_STATUS['only']):
+            path = export_json(save_directory, title, json_data)
+            announce_message(f"Redacted JSON stored in {path}", MESSAGE_TYPES['info'])
+        if keep_json == JSON_STATUS['only']:
             return STATUS['ok']
-
-        process_json(json_data, title, url) #passing the URL only so it can get logged in the library
-        
+        process_json(json_data, title, url)
         return STATUS['ok']
-
-    except (ValueError, TimeoutError) as ex:
-        announce_message(f"\tCritical error with the download process.", MESSAGE_TYPES['error'], ex)
-        return STATUS['fail']
-
-    except AttributeError as ex:
-        announce_message(f"\tNo 'card' object found in JSON blob.", MESSAGE_TYPES['error'])
-        return STATUS['fail']
-
     except Exception as ex:
-        announce_message(f"\tError processing JSON data for {title}", MESSAGE_TYPES['error'], ex)
-        with open(json_file_name, 'w') as json_file:
-            json.dump(json_data, json_file, indent=4)
-            announce_message(f"\tJSON data stored in {json_file_name}", MESSAGE_TYPES['info'])
-        return STATUS['retry']
+        # Never write unsolicited raw diagnostic JSON, including in Clean mode.
+        announce_message("Playlist processing failed; any downloads were kept", MESSAGE_TYPES['error'], ex)
+        return STATUS['fail']
+
 
 def update_progress(url, url_status, index, completed_urls, attempts, total_urls, button):
     if url_status == STATUS['retry']:
@@ -420,13 +399,18 @@ def update_progress(url, url_status, index, completed_urls, attempts, total_urls
         remove_string(textbox=url_queue_text, text=url) # Remove the URL/line from the queue
         button.configure(text=f"Processing... {total_urls - completed_urls} URLs left")
         if url_status == STATUS['ok']:
-            url_success_text.insert(index=ctk.END, text=f"{url}\n") # Add URL into the Completed tab
+            url_success_text.insert(index=ctk.END, text=f"{redact_text(url)}\n") # Add URL into the Completed tab
         else:
-            url_fail_text.insert(index=ctk.END, text=f"{url}\n") # Add URL into the Failed tab
+            url_fail_text.insert(index=ctk.END, text=f"{redact_text(url)}\n") # Add URL into the Failed tab
 
     return index, completed_urls, attempts
 
 def process_json(data, title, url):
+    with ExitStack() as files:
+        return _process_json(data, title, url, files)
+
+
+def _process_json(data, title, url, files):
     announce_message(f"\tNew URL started...", MESSAGE_TYPES['info'])
     announce_message(f"\t\tTitle: {title}", MESSAGE_TYPES['info'])
     announce_message(f"\t\tURL: {url}", MESSAGE_TYPES['info'])
@@ -443,21 +427,21 @@ def process_json(data, title, url):
     announce_message(f"\t\t\tCreating images folder: {image_dir}", MESSAGE_TYPES['info'])
     os.makedirs(image_dir, exist_ok=True)
 
-    meta_card_file = open(os.path.join(downloads_dir,  'card.txt'), 'w', encoding="utf-8") # file for metadata about the card
+    meta_card_file = files.enter_context(open_private_text(os.path.join(downloads_dir, 'card.txt'))) # file for metadata about the card
     announce_message(f"\t\t\tCreated card metadata file: {meta_card_file}", MESSAGE_TYPES['info'])
 
-    meta_tracks_file = open(os.path.join(downloads_dir,  'tracks.txt'), 'w', encoding="utf-8") # file for metadata about the tracks on the card
+    meta_tracks_file = files.enter_context(open_private_text(os.path.join(downloads_dir, 'tracks.txt'))) # file for metadata about the tracks on the card
     announce_message(f"\t\t\tCreating tracks metadata file: {meta_tracks_file}", MESSAGE_TYPES['info'])
     meta_tracks_file.write('Track Details\n================\n') # write the file header here. in a previous version this was appended after the card details in a single file
 
-    meta_library_path = os.path.join(save_directory,  'YJE-library.csv') # library file to drop info about all the cards we've explored
+    meta_library_path = output_path(save_directory, 'YJE-library-redacted.csv') # library file to drop info about all the cards we've explored
     meta_library_file = "x"
     if(os.path.exists(meta_library_path)): #if file exists, just append to it, starting with a new line (to ensure we are writing on a fresh line)
-        meta_library_file = open(meta_library_path, 'a', encoding="utf-8")
+        meta_library_file = files.enter_context(open_private_text(meta_library_path, 'a'))
         meta_library_file.write('\n')
         announce_message(f"\t\t\tLibrary file already found: {meta_library_file}", MESSAGE_TYPES['info'])
     else: # if file doesn't exist, give it a header line
-        meta_library_file = open(meta_library_path, 'w', encoding="utf-8")
+        meta_library_file = files.enter_context(open_private_text(meta_library_path))
         announce_message(f"\t\t\tLibrary file not already found, creating a new one: {meta_tracks_file}", MESSAGE_TYPES['info'])
         meta_library_file.write('cardId;title;author;version;languages;slug;category;duration;readableDuration;fileSize;readableFileSize;tracks;createdAt;updatedAt;url;shareCount;availability;sharelinkURL;audio_formats\n')
     announce_message(f"\t\tWorkspace setup complete.", MESSAGE_TYPES['info'])
@@ -812,7 +796,10 @@ def process_json(data, title, url):
     meta_tracks_file.close()
 
     announce_message(f"\t\tWriting metadata to the Library file.", MESSAGE_TYPES['info'])
-    meta_library_file.write(f"{cardID};{title};{author};{version};{languages};{slug};{category};{str(duration)};{readableDuration};{str(fileSize)};{readableFileSize};{str(track_counter)};{createdAt};{updatedAt};{url};{sharecount};{availability};{shareLinkURL};{",".join(audio_formats)};\n")
+    csv.writer(meta_library_file, delimiter=';').writerow([csv_cell(value) for value in (
+        cardID, title, author, version, languages, slug, category, duration,
+        readableDuration, fileSize, readableFileSize, track_counter, createdAt,
+        updatedAt, url, sharecount, availability, shareLinkURL, ','.join(audio_formats))])
 
     meta_library_file.close()
 

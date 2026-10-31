@@ -1,5 +1,8 @@
 from datetime import datetime
+from contextlib import ExitStack
 import json
+import csv
+import privacy
 import os
 from pathlib import Path
 import re
@@ -20,7 +23,8 @@ def playlist(title='Playlist', category='test'):
 
 
 def app_namespace(root, compress):
-    return load_functions({'process_json', 'clean_filename', 'convert_seconds', 'convert_bytes'}, {
+    return load_functions({'process_json', '_process_json', 'clean_filename', 'convert_seconds', 'convert_bytes'}, {
+        'ExitStack': ExitStack, 'csv': csv, 'redact_text': privacy.redact_text, 'open_private_text': privacy.open_private_text, 'csv_cell': privacy.csv_cell,
         'os': os, 're': re, 'datetime': datetime, 'json': json,
         'Workspace': Workspace, 'output_path': output_path, 'safe_filename': safe_filename,
         'save_directory': root, 'compress_folder': compress,
