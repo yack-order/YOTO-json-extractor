@@ -18,6 +18,7 @@ from datetime import datetime
 import shutil
 import base64
 from login import get_access_token
+from archive_safety import Workspace, output_path, safe_filename
 
 class URLThread(threading.Thread):
     def __init__(self, url, access_token):
@@ -89,14 +90,8 @@ def convert_bytes(num, suffix='B'):
     return f"{num:.1f}Yi{suffix}"
 
 def clean_filename(filename):
-    try:
-        filename = re.sub(r'[\t]', '', filename)
-        clean_name = re.sub(r'[<>:"/\\|?*]', '', filename).strip()
-        #announce_message(f"clean_Filename went from \n\t[[{filename}]] to\n\t[[{clean_name}]]", MESSAGE_TYPES['info'])
-        return clean_name
-    except Exception as ex:
-        announce_message(f"Clean_filename failed.", MESSAGE_TYPES['error'], ex)
-        return None
+    return safe_filename(filename)
+
 
 def choose_directory():
     global save_directory
@@ -385,7 +380,7 @@ def handle_json_data(json_data, url, keep_json):
         announce_message(f"\tCard object found.", MESSAGE_TYPES['info'])
         title = clean_filename(card.get('title','Untitled'))
         announce_message(f"\tTitle: {title}", MESSAGE_TYPES['info'])
-        json_file_name = f"{title}.json"
+        json_file_name = output_path(save_directory, f"{title[:170]}.json")
         
         if keep_json == JSON_STATUS['keep'] | keep_json == JSON_STATUS['only']:
                 with open(json_file_name, 'w') as json_file:
@@ -436,10 +431,8 @@ def process_json(data, title, url):
     announce_message(f"\t\tTitle: {title}", MESSAGE_TYPES['info'])
     announce_message(f"\t\tURL: {url}", MESSAGE_TYPES['info'])
 
-    #save_directory = os.path.join(save_directory + "temp-" + datetime.today().strftime('%Y-%m-%d')) # put the downloads and stuff into a temp folder so its easier to clean up when that needs to happen
-    #os.makedirs(save_directory, exist_ok=True)
-    downloads_dir = os.path.join(save_directory, clean_filename(title))
-    os.makedirs(downloads_dir, exist_ok=True)
+    workspace = Workspace.create(save_directory)
+    downloads_dir = str(workspace.path)
 
     announce_message(f"\t\tSetting up playlist workspace.", MESSAGE_TYPES['info'])
     audio_dir = os.path.join(downloads_dir, 'audio_files')
@@ -821,11 +814,14 @@ def process_json(data, title, url):
     announce_message(f"\t\tWriting metadata to the Library file.", MESSAGE_TYPES['info'])
     meta_library_file.write(f"{cardID};{title};{author};{version};{languages};{slug};{category};{str(duration)};{readableDuration};{str(fileSize)};{readableFileSize};{str(track_counter)};{createdAt};{updatedAt};{url};{sharecount};{availability};{shareLinkURL};{",".join(audio_formats)};\n")
 
+    meta_library_file.close()
+
     # zip up the completed package
     if re.search(REGEX_DISCOVER, description):
-        zipname = "" + category + " - " + clean_filename(title) + "[DEMO][" + cardID + "] (" + datetime.today().strftime('%Y-%m-%d') + ').7z' #demo content, partial card contents
+        zipname = "" + clean_filename(category) + " - " + clean_filename(title) + "[DEMO][" + clean_filename(cardID) + "] (" + datetime.today().strftime('%Y-%m-%d') + ').7z' #demo content, partial card contents
     else:
-        zipname = "" + category + " - " + clean_filename(title) + "[" + cardID + "] (" + datetime.today().strftime('%Y-%m-%d') + ').7z'
+        zipname = "" + clean_filename(category) + " - " + clean_filename(title) + "[" + clean_filename(cardID) + "] (" + datetime.today().strftime('%Y-%m-%d') + ').7z'
+    zipname = output_path(save_directory, safe_filename(zipname[:-3], limit=175) + ".7z")
     announce_message(f"\t\tZipping files into 7zip archive.", MESSAGE_TYPES['info'])
     try:
         compress_folder(downloads_dir, zipname) #add the current date for archive safety
@@ -836,7 +832,7 @@ def process_json(data, title, url):
     # delete the source folder if the zip was successful
     announce_message(f"\t\tRemoving temp files.", MESSAGE_TYPES['info'])
     try:
-        shutil.rmtree(downloads_dir)
+        workspace.cleanup()
         announce_message(f"\t\tTemp files removed.", MESSAGE_TYPES['info'])
     except Exception as ex:
         announce_message(f"\t\tError removing folder", MESSAGE_TYPES['error'], e=ex)
