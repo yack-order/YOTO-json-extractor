@@ -39,13 +39,18 @@ class LoginTests(unittest.TestCase):
         response = MagicMock(status_code=200)
         response.__enter__.return_value = response
         response.iter_content.return_value = [json.dumps({'access_token': 'SYNTHETIC_TOKEN', 'token_type': 'Bearer', 'expires_in': 60}).encode()]
-        with patch('login.requests.post', return_value=response) as post:
+        session = MagicMock()
+        session.__enter__.return_value = session
+        session.post.return_value = response
+        with patch('login.requests.Session', return_value=session):
+            post = session.post
             self.assertEqual(login.exchange_code('client', 'code', 'verifier'), 'SYNTHETIC_TOKEN')
+            self.assertFalse(session.trust_env)
             self.assertFalse(post.call_args.kwargs['allow_redirects'])
             self.assertEqual(post.call_args.kwargs['timeout'], (10, 15))
             self.assertEqual(post.call_args.kwargs['data']['code_verifier'], 'verifier')
         response.iter_content.return_value = [b'x' * 65537]
-        with patch('login.requests.post', return_value=response), self.assertRaisesRegex(ValueError, 'safely'):
+        with patch('login.requests.Session', return_value=session), self.assertRaisesRegex(ValueError, 'safely'):
             login.exchange_code('client', 'code', 'verifier')
         self.assertTrue(response.__exit__.called)
 
