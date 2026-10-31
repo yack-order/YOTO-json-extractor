@@ -1,5 +1,38 @@
-
-/Card Data
-/__pycache__
-yoto-json-extractor-v2.7z
-YJE-library.csv
+# Private inputs, exports, recovery workspaces and credentials
+/Card Data/
+/exports/
+/downloads/
+/logs/
+audio_files/
+images/
+card.txt
+tracks.txt
+/.yje-work-*/
+/.yje-archive-*
+*.json
+*.csv
+*.log
+*.7z
+*.zip
+*.mp3
+*.aac
+*.m4a
+*.wav
+*.ogg
+*.flac
+*.opus
+*.env
+.env*
+*.pem
+*.key
+credentials*
+tokens*
+# Local Python/editor/build state
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+build/
+dist/
+*.spec
+.DS_Store
