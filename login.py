@@ -51,19 +51,21 @@ def authorization_url(client_id, state, verifier):
 
 def exchange_code(client_id, code, verifier):
     try:
-        with requests.post(TOKEN_URL, data={
-            'grant_type': 'authorization_code', 'client_id': client_id,
-            'code': code, 'code_verifier': verifier, 'redirect_uri': REDIRECT_URL,
-        }, timeout=(10, 15), allow_redirects=False, stream=True) as response:
-            if response.status_code != 200:
-                raise ValueError('Token exchange failed')
-            body = bytearray()
-            started = time.monotonic()
-            for chunk in response.iter_content(1):
-                if time.monotonic() - started > 30 or len(body) + len(chunk) > 65536:
-                    raise ValueError('Token response exceeded limits')
-                body.extend(chunk)
-            data = json.loads(body)
+        with requests.Session() as session:
+            session.trust_env = False
+            with session.post(TOKEN_URL, data={
+                'grant_type': 'authorization_code', 'client_id': client_id,
+                'code': code, 'code_verifier': verifier, 'redirect_uri': REDIRECT_URL,
+            }, timeout=(10, 15), allow_redirects=False, stream=True) as response:
+                if response.status_code != 200:
+                    raise ValueError('Token exchange failed')
+                body = bytearray()
+                started = time.monotonic()
+                for chunk in response.iter_content(1):
+                    if time.monotonic() - started > 30 or len(body) + len(chunk) > 65536:
+                        raise ValueError('Token response exceeded limits')
+                    body.extend(chunk)
+                data = json.loads(body)
         token = data.get('access_token')
         if (not isinstance(token, str) or not token or re.search(r'\s|[\x00-\x1f\x7f]', token)
                 or data.get('token_type', '').lower() != 'bearer'

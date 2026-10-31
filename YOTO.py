@@ -20,23 +20,9 @@ from datetime import datetime
 import shutil
 import base64
 from privacy import redact_text, scrub_json, register_public_links, export_json, export_log, open_private_text, csv_cell
+from http_client import fetch_url, normalize_url, card_id_from_url, METADATA_LIMIT, IMAGE_LIMIT
 from login import get_access_token
 from archive_safety import Workspace, create_verified_archive, output_path, safe_filename
-
-class URLThread(threading.Thread):
-    def __init__(self, url, access_token):
-        threading.Thread.__init__(self)
-        self.result = None
-        self.url = url
-        self.access_token = access_token
-
-    def run(self):
-        if self.access_token:
-            print("Sending authenticated request")
-            self.result = requests.get(self.url, headers={"Authorization": f"Bearer {access_token}"})
-        else:
-            print("Sending request")
-            self.result = requests.get(self.url)
 
 MESSAGE_TYPES = {"info": "Info", "warning": "Warning", "error": "Error"}
 STATUS = {"ok": 1, "retry": 2, "fail": 3}
@@ -142,32 +128,8 @@ def download_and_process_yoto_originals():
     thread.start()
 
 def ensure_https(url):
-    try:
-        if not url:
-            return url
-        # trim whitespace
-        url = url.strip()
+    return normalize_url(url)
 
-        # handle protocol-relative URLs like //example.com
-        if url.startswith("//"):
-            url = "https:" + url
-            announce_message(f"Ensure_https: Protocol-relative URL normalized to https.", MESSAGE_TYPES['warning'])
-            return url
-
-        # case-insensitive match for http:// or https:// and force protocol to lowercase
-        m = re.match(r'^(https?://)', url, re.IGNORECASE)
-        if m:
-            protocol = m.group(1).lower()
-            rest = url[m.end():]
-            url = protocol + rest
-        else:
-            url = "https://" + url
-            announce_message(f"Ensure_https: URL was not formatted as expected.", MESSAGE_TYPES['warning'])
-
-        return url
-    except Exception as ex:
-        announce_message(f"Ensure_https failed.", MESSAGE_TYPES['error'], ex)
-        return url
 
 def remove_string(textbox, text):
     start_index = textbox.search(text, "1.0", stopindex="end")
@@ -248,19 +210,15 @@ def save_logs():
     dump_text_to_file(url_success_text, "Completed-URLs", folder)
     dump_text_to_file(url_fail_text, "Failed-URLs", folder)
 
-def fetchURL_threading(url, access_token=None):
-    thread = URLThread(url, access_token)
-    thread.start()
-    thread.join(timeout=DOWNLOAD_TIMEOUT_SECONDS)
-    if thread.is_alive():
-         announce_message(f"Download is taking longer than the set limit ({DOWNLOAD_TIMEOUT_SECONDS}.", MESSAGE_TYPES['warning'])
-         raise TimeoutError("Download took too long.")
-    else:
-        return thread.result
+def fetchURL_threading(url, access_token=None, **limits):
+    # The batch already runs in a worker; never spawn a second request thread.
+    return fetch_url(url, access_token, **limits)
+
 
 def process_urls(urls, keep_json):
     total_urls = len(urls)
     completed_urls = 0
+    failed_urls = 0
     index = 0
     attempts = 0
     announce_message(f"Found {total_urls} URLs.", MESSAGE_TYPES['info'])
@@ -280,18 +238,21 @@ def process_urls(urls, keep_json):
             announce_message(f"An error occurred processing this URL: {url}", MESSAGE_TYPES['error'], ex)
             url_status = STATUS['fail']
 
+        if url_status == STATUS['fail']:
+            failed_urls += 1
         index, completed_urls, attempts = update_progress(url, url_status, index, completed_urls, attempts, total_urls, download_button)
         announce_message(f"Finished procesing {index + 1} of {total_urls}", MESSAGE_TYPES['info'])
 
     #after processing, return the UI to normal state
     download_button.configure(state=tk.NORMAL, text="Extract (non Yoto Original) files")
     progress_bar.pack(pady=12)
-    announce_message(f"All downloads and processing completed successfully.", MESSAGE_TYPES['info'])
+    announce_message(f"Processing finished: {completed_urls - failed_urls} succeeded, {failed_urls} failed.", MESSAGE_TYPES['info'])
     save_logs()
 
 def process_yoto_original_urls(urls, keep_json):
     total_urls = len(urls)
     completed_urls = 0
+    failed_urls = 0
     index = 0
     attempts = 0
     announce_message(f"Found {total_urls} URLs.", MESSAGE_TYPES['info'])
@@ -311,13 +272,15 @@ def process_yoto_original_urls(urls, keep_json):
             announce_message(f"An error occurred processing this URL: {url}", MESSAGE_TYPES['error'], ex)
             url_status = STATUS['fail']
 
+        if url_status == STATUS['fail']:
+            failed_urls += 1
         index, completed_urls, attempts = update_progress(url, url_status, index, completed_urls, attempts, total_urls, download_originals_button)
         announce_message(f"Finished procesing {index + 1} of {total_urls}", MESSAGE_TYPES['info'])
 
     #after processing, return the UI to normal state
     download_originals_button.configure(state=tk.NORMAL, text="Extract Yoto Original files")
     progress_bar.pack_forget()
-    announce_message(f"All downloads and processing completed successfully.", MESSAGE_TYPES['info'])
+    announce_message(f"Processing finished: {completed_urls - failed_urls} succeeded, {failed_urls} failed.", MESSAGE_TYPES['info'])
     save_logs()
 
 def handle_original_url(url, attempts, keep_json):
@@ -327,12 +290,12 @@ def handle_original_url(url, attempts, keep_json):
 
     announce_message(f"\tAttempt {attempts} for {url}", MESSAGE_TYPES['info'])
 
-    content_id = re.match(REGEX_CONTENT_ID_FROM_URL, url).group(1)
+    content_id = card_id_from_url(url)
 
     url = f"https://api.yotoplay.com/card/{content_id}"
 
 
-    response = fetchURL_threading(url, access_token)
+    response = fetchURL_threading(url, access_token, max_bytes=METADATA_LIMIT)
     if response.status_code != 200:
         announce_message(f"\tFailed to access the URL: {response.status_code}", MESSAGE_TYPES['error'])
         return STATUS['fail']
@@ -354,7 +317,7 @@ def handle_url(url, attempts, keep_json):
     announce_message(f"\tAttempt {attempts} for {url}", MESSAGE_TYPES['info'])
     url = ensure_https(url)
 
-    response = fetchURL_threading(url)
+    response = fetchURL_threading(url, max_bytes=METADATA_LIMIT)
     if response.status_code != 200:
         announce_message(f"\tFailed to access the URL: {response.status_code}", MESSAGE_TYPES['error'])
         return STATUS['fail']
@@ -614,7 +577,7 @@ def _process_json(data, title, url, files):
         cover_image_url = data['props']['pageProps']['card']['metadata']['cover']['imageL']
         cover_image_path = os.path.join(image_dir, 'cover_image.png')
         # TODO: is the file format being forced here? check that this is correct, and save the right file format
-        image_response = fetchURL_threading(cover_image_url)
+        image_response = fetchURL_threading(cover_image_url, max_bytes=IMAGE_LIMIT)
 
         if image_response.status_code == 200:
             with open(cover_image_path, 'wb') as img_file:
@@ -661,6 +624,8 @@ def _process_json(data, title, url, files):
             key = f"{track_counter:0{pad_length}d}"
 
             audio_format = trackTitle = audio_file_ext = audio_content_type = 'tbd'
+            if not audio_url:
+                raise ValueError("Track has no downloadable audio source; files were kept")
             if audio_url:
                 audio_response = fetchURL_threading(audio_url)
                 # BUG: for radio stations, the response is a data stream. We need a way to detect this and fail the download if that happens. It would stil be good to write the metadata to the tracks.txt file but we can't download a radio station
@@ -707,7 +672,7 @@ def _process_json(data, title, url, files):
                         # This is where the in-file metadata tags should get written
                 else:
                     # BUG: Figure out a way to retry if the file is not fetched
-                    announce_message(f"\t\t\t\t\tFailed to download track. Response code {audio_response.status_code}", MESSAGE_TYPES['error'])
+                    raise ValueError("Track download failed; files were kept")
 
             announce_message(f"\t\t\t\t\tLooking for icon file.", MESSAGE_TYPES['info'])
             # icons can be set for chapters and also tracks. In a browser, the chapter icon will override and be displayed. On a player or the yoto app, the Track icon will be displayed instead. for archival, we want to grab the track icon and then fallback on the chapter icon if needed.
@@ -730,7 +695,7 @@ def _process_json(data, title, url, files):
                     icon_file_name = clean_filename(f"{key}.png")
 
                 if icon_url:
-                    icon_response = fetchURL_threading(icon_url)
+                    icon_response = fetchURL_threading(icon_url, max_bytes=IMAGE_LIMIT)
                     if icon_response.status_code == 200:
                         with open(os.path.join(image_dir, icon_file_name), 'wb') as icon_file:
                             icon_file.write(icon_response.content)
