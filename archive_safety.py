@@ -1,5 +1,6 @@
 """Filesystem boundaries for untrusted playlist metadata."""
 from dataclasses import dataclass
+import os
 from pathlib import Path
 import re
 import shutil
@@ -49,3 +50,45 @@ class Workspace:
                 or self.path.is_symlink() or (info.st_dev, info.st_ino) != self.identity):
             raise ValueError('Workspace ownership changed; keeping files')
         shutil.rmtree(self.path)
+
+
+def create_verified_archive(folder_path, requested_path):
+    """Verify a temporary archive, then publish without replacing an existing file.
+
+    Failure leaves the owned download workspace intact for manual recovery.
+    """
+    import py7zr
+
+    source = Path(folder_path)
+    requested = Path(requested_path)
+    temporary = None
+    try:
+        if source.is_symlink() or not source.is_dir():
+            raise ValueError('Invalid archive source')
+        expected = {source.name}
+        for item in source.rglob('*'):
+            if item.is_symlink():
+                raise ValueError('Refusing symlink archive members')
+            expected.add(str(Path(source.name) / item.relative_to(source)).replace('\\', '/'))
+        descriptor, temporary = tempfile.mkstemp(prefix='.yje-archive-', suffix='.7z', dir=requested.parent)
+        with os.fdopen(descriptor, 'w+b') as handle:
+            with py7zr.SevenZipFile(handle, 'w') as archive:
+                archive.writeall(source, source.name)
+            handle.flush()
+            os.fsync(handle.fileno())
+        with py7zr.SevenZipFile(temporary, 'r') as archive:
+            if set(archive.getnames()) != expected or archive.testzip() is not None:
+                raise ValueError('Archive integrity verification failed')
+        # link() publishes a complete file atomically and never overwrites a path.
+        for index in range(10000):
+            candidate = requested if index == 0 else requested.with_name(
+                f'{requested.stem} ({index}){requested.suffix}')
+            try:
+                os.link(temporary, candidate)
+                return str(candidate)
+            except FileExistsError:
+                continue
+        raise FileExistsError('Archive output names exhausted')
+    finally:
+        if temporary is not None:
+            Path(temporary).unlink(missing_ok=True)

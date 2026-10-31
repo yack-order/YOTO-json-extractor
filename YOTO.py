@@ -18,7 +18,7 @@ from datetime import datetime
 import shutil
 import base64
 from login import get_access_token
-from archive_safety import Workspace, output_path, safe_filename
+from archive_safety import Workspace, create_verified_archive, output_path, safe_filename
 
 class URLThread(threading.Thread):
     def __init__(self, url, access_token):
@@ -53,8 +53,8 @@ access_token = None
 keep_json = JSON_STATUS['clean']
 
 def compress_folder(folder_path, output_path):
-    with py7zr.SevenZipFile(output_path, 'w') as archive:
-        archive.writeall(folder_path, os.path.basename(folder_path))
+    return create_verified_archive(folder_path, output_path)
+
 
 def announce_message(message, type=MESSAGE_TYPES['info'], e=None):
     # TODO: add an option to set logging level (info, warning, error)
@@ -824,10 +824,11 @@ def process_json(data, title, url):
     zipname = output_path(save_directory, safe_filename(zipname[:-3], limit=175) + ".7z")
     announce_message(f"\t\tZipping files into 7zip archive.", MESSAGE_TYPES['info'])
     try:
-        compress_folder(downloads_dir, zipname) #add the current date for archive safety
+        zipname = compress_folder(downloads_dir, zipname)
         announce_message(f"\t\t7zip successful: {zipname}", MESSAGE_TYPES['info'])
     except Exception as ex:
-        announce_message(f"\t\tError compressing folder to 7zip.", MESSAGE_TYPES['error'], e=ex)
+        announce_message(f"\t\tArchive failed; downloads retained in {downloads_dir}", MESSAGE_TYPES['error'])
+        raise OSError("Archive creation or verification failed; downloads were kept") from ex
 
     # delete the source folder if the zip was successful
     announce_message(f"\t\tRemoving temp files.", MESSAGE_TYPES['info'])
